@@ -1,3 +1,4 @@
+#NOTE: outputs must be defined at every level of the module hierarchy, so here (root), and in the network module
 # Define output values for later reference
 output "resource_group_name" {
   value = azurerm_resource_group.rg.name
