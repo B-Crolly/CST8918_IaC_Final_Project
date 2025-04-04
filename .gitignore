@@ -32,3 +32,4 @@
 # Other files
 *.ps1
 # Allowing .terraform.lock.hcl files to be committed
+software_requirements.txt
