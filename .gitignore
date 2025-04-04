@@ -31,4 +31,4 @@
 .idea
 # Other files
 *.ps1
-*.lock.*
+# Allowing .terraform.lock.hcl files to be committed

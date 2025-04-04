@@ -1,6 +1,6 @@
 # Configure the Terraform runtime requirements.
 terraform {
-  required_version = ">= 1.1.0"
+  required_version = ">= 1.0.0"
 
   required_providers {
     # Azure Resource Manager provider and version
@@ -10,7 +10,7 @@ terraform {
     }
     cloudinit = {
       source  = "hashicorp/cloudinit"
-      version = "25.1" #"2.3.3  use this version if the weather api is having version problems"
+      version = "2.3.6" #"2.3.3  use this version if the weather api is having version problems"
     }
   }
 
@@ -20,6 +20,8 @@ terraform {
 provider "azurerm" {
   # Leave the features block empty to accept all defaults
   features {}
+  use_oidc        = true
+  subscription_id = "baa2e491-8289-482b-8458-84a427f52aa1"
 }
 
 provider "cloudinit" {
