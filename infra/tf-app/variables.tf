@@ -1,7 +1,9 @@
 # Define config variables
 variable "labelPrefix" {
   type        = string
+  default     = "cst8918-final-project-group-1"
   description = "cst8918-final-project-group-1"
+
 }
 
 variable "region" {

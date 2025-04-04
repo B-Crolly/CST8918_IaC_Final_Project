@@ -4,5 +4,5 @@ output "resource_group_name" {
 }
 
 output "public_ip" {
-  value = azurerm_linux_virtual_machine.webserver.public_ip_address
+  value = azurerm_public_ip.webserver.ip_address
 }

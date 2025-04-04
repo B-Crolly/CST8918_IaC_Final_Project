@@ -9,7 +9,7 @@ resource "azurerm_public_ip" "webserver" {
   name                = "${var.labelPrefix}-PublicIP"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  allocation_method   = "Dynamic"
+  allocation_method   = "Static"
 }
 
 # Define the virtual network
@@ -68,8 +68,13 @@ resource "azurerm_network_interface" "webserver" {
   ip_configuration {
     name                          = "${var.labelPrefix}-NicConfig"
     subnet_id                     = azurerm_subnet.webserver.id
-    private_ip_address_allocation = "Dynamic"
+    private_ip_address_allocation = "Static"
+    private_ip_address           = "10.0.1.10"
     public_ip_address_id          = azurerm_public_ip.webserver.id
+  }
+  # This is to ensure that the ip address is disassociated from the NIC before it is deleted
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
