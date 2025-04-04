@@ -15,17 +15,38 @@ resource "azurerm_public_ip" "webserver" {
 # Define the virtual network
 resource "azurerm_virtual_network" "vnet" {
   name                = "${var.labelPrefix}-Vnet"
-  address_space       = ["10.0.0.0/16"]
+  address_space       = ["10.0.0.0/14"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
-# Define the subnet
-resource "azurerm_subnet" "webserver" {
-  name                 = "${var.labelPrefix}-Subnet"
+# Define subnets for different environments
+resource "azurerm_subnet" "prod" {
+  name                 = "${var.labelPrefix}-Subnet-Prod"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
+  address_prefixes     = ["10.0.0.0/16"]
+}
+
+resource "azurerm_subnet" "test" {
+  name                 = "${var.labelPrefix}-Subnet-Test"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.1.0.0/16"]
+}
+
+resource "azurerm_subnet" "dev" {
+  name                 = "${var.labelPrefix}-Subnet-Dev"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.2.0.0/16"]
+}
+
+resource "azurerm_subnet" "admin" {
+  name                 = "${var.labelPrefix}-Subnet-Admin"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.3.0.0/16"]
 }
 
 # Define network security group and rules
@@ -67,7 +88,7 @@ resource "azurerm_network_interface" "webserver" {
 
   ip_configuration {
     name                          = "${var.labelPrefix}-NicConfig"
-    subnet_id                     = azurerm_subnet.webserver.id
+    subnet_id                     = azurerm_subnet.prod.id
     private_ip_address_allocation = "Static"
     private_ip_address           = "10.0.1.10"
     public_ip_address_id          = azurerm_public_ip.webserver.id
