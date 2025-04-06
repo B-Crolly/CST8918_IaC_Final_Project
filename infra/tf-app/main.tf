@@ -12,15 +12,15 @@ module "network" {
   resource_group_name = azurerm_resource_group.rg.name
 }
 
-# Call AKS module (commented out until implemented)
-# module "aks" {
-#   source              = "./modules/aks"
-#   label_prefix        = var.labelPrefix
-#   location            = var.region
-#   resource_group_name = azurerm_resource_group.rg.name
-#   test_subnet_id      = module.network.test_subnet_id
-#   prod_subnet_id      = module.network.prod_subnet_id
-# }
+# Call AKS module (uncommented and ready to use)
+module "aks" {
+  source              = "./modules/aks"
+  label_prefix        = var.labelPrefix
+  location            = var.region
+  resource_group_name = azurerm_resource_group.rg.name
+  test_subnet_id      = module.network.test_subnet_id
+  prod_subnet_id      = module.network.prod_subnet_id
+}
 
 # Call application module (commented out until implemented)
 # module "application" {
