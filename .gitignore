@@ -29,7 +29,13 @@
 .vscode
 .idea
 .idea
+infra/tf-app/modules/redis/*.lock.hcl
 # Other files
 *.ps1
+node_modules
+/.cache
+/build
+/public/build
+.env
 # Allowing .terraform.lock.hcl files to be committed
 software_requirements.txt
