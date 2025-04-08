@@ -6,9 +6,9 @@ resource "azurerm_resource_group" "rg" {
 
 # Call network module
 module "network" {
-  source       = "./modules/network"
-  label_prefix = var.labelPrefix
-  region       = var.region
+  source              = "./modules/network"
+  label_prefix        = var.labelPrefix
+  region              = var.region
   resource_group_name = azurerm_resource_group.rg.name
 }
 
