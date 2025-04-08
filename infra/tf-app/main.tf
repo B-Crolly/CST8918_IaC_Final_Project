@@ -22,6 +22,8 @@ module "aks" {
   prod_subnet_id      = module.network.prod_subnet_id
 }
 
+# todo add module redis here
+
 # Call application module (commented out until implemented)
 # module "application" {
 #   source              = "./modules/application"
