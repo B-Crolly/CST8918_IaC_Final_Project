@@ -11,36 +11,36 @@ terraform {
 }
 
 resource "azurerm_redis_cache" "redis_test" {
-  count                         = var.redis_cache_enabled ? 1 : 0
+  #count                         = var.redis_cache_enabled ? 1 : 0
   name                          = lower("${var.redis_cache_prefix}-${var.label_prefix}-test")
   resource_group_name           = var.resource_group_name
   location                      = var.location
   capacity                      = var.redis_cache_capacity_test
   family                        = var.redis_cache_family
   sku_name                      = var.redis_cache_sku
-  enable_non_ssl_port           = false
+  non_ssl_port_enabled          = false
   minimum_tls_version           = "1.2"
   public_network_access_enabled = var.redis_public_network_access_enabled
 
   redis_configuration {
-    enable_authentication = var.redis_enable_authentication
+    authentication_enabled = var.redis_enable_authentication
   }
 }
 
 resource "azurerm_redis_cache" "redis_prod" {
-  count                         = var.redis_cache_enabled ? 1 : 0
+  #count                         = var.redis_cache_enabled ? 1 : 0
   name                          = lower("${var.redis_cache_prefix}-${var.label_prefix}-prod")
   resource_group_name           = var.resource_group_name
   location                      = var.location
   capacity                      = var.redis_cache_capacity_prod
   family                        = var.redis_cache_family
   sku_name                      = var.redis_cache_sku
-  enable_non_ssl_port           = false
+  non_ssl_port_enabled          = false
   minimum_tls_version           = "1.2"
   public_network_access_enabled = var.redis_public_network_access_enabled
 
   redis_configuration {
-    enable_authentication = var.redis_enable_authentication
+    authentication_enabled = var.redis_enable_authentication
   }
 }
 
@@ -51,7 +51,7 @@ resource "azurerm_private_dns_zone" "pdz_redis" {
 
 # Create private virtual network link to vnet
 resource "azurerm_private_dns_zone_virtual_network_link" "redis_pdz_vnet_link" {
-  name                  = "privatelink_to_${vnet_name}"
+  name                  = "privatelink_to_${var.vnet_name}"
   resource_group_name   = var.resource_group_name
   virtual_network_id    = var.vnet_id
   private_dns_zone_name = azurerm_private_dns_zone.pdz_redis.name

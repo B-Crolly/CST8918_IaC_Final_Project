@@ -37,13 +37,15 @@ variable "subnet_id_prod" {
   description = "(Required) The ID of the Subnet from which Private IP Addresses will be allocated for 'prod' environment Redis' Private Endpoint."
 }
 
+
 # Other required/optional variables from reference
 
-variable "redis_cache_enabled" {
-  description = "(Optional) Whether to enable or disable redis_cache resource creations"
-  type        = bool
-  default     = true
-}
+#variable "redis_cache_enabled" {
+#  description = "(Optional) Whether to enable or disable redis_cache resource creations"
+#  type        = bool
+#  default     = true
+#}
+
 variable "redis_cache_prefix" {
   type        = string
   default     = "redis"

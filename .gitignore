@@ -29,6 +29,7 @@
 .vscode
 .idea
 .idea
+infra/tf-app/modules/redis/*.lock.hcl
 # Other files
 *.ps1
 node_modules
