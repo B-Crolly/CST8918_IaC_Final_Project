@@ -20,8 +20,31 @@ output "test_cluster_name" {
 }
 
 output "test_kube_config" {
-  description = "Kubeconfig for the test AKS cluster"
+  description = "Raw Kubernetes config for the test cluster"
   value       = azurerm_kubernetes_cluster.test.kube_config_raw
+  sensitive   = true
+}
+
+output "test_kube_config_host" {
+  description = "Host from kube_config for the test cluster"
+  value       = azurerm_kubernetes_cluster.test.kube_config[0].host
+}
+
+output "test_kube_config_client_certificate" {
+  description = "Client certificate from kube_config for the test cluster"
+  value       = base64decode(azurerm_kubernetes_cluster.test.kube_config[0].client_certificate)
+  sensitive   = true
+}
+
+output "test_kube_config_client_key" {
+  description = "Client key from kube_config for the test cluster"
+  value       = base64decode(azurerm_kubernetes_cluster.test.kube_config[0].client_key)
+  sensitive   = true
+}
+
+output "test_kube_config_cluster_ca_certificate" {
+  description = "Cluster CA certificate from kube_config for the test cluster"
+  value       = base64decode(azurerm_kubernetes_cluster.test.kube_config[0].cluster_ca_certificate)
   sensitive   = true
 }
 
@@ -36,7 +59,30 @@ output "prod_cluster_name" {
 }
 
 output "prod_kube_config" {
-  description = "Kubeconfig for the production AKS cluster"
+  description = "Raw Kubernetes config for the production cluster"
   value       = azurerm_kubernetes_cluster.prod.kube_config_raw
+  sensitive   = true
+}
+
+output "prod_kube_config_host" {
+  description = "Host from kube_config for the production cluster"
+  value       = azurerm_kubernetes_cluster.prod.kube_config[0].host
+}
+
+output "prod_kube_config_client_certificate" {
+  description = "Client certificate from kube_config for the production cluster"
+  value       = base64decode(azurerm_kubernetes_cluster.prod.kube_config[0].client_certificate)
+  sensitive   = true
+}
+
+output "prod_kube_config_client_key" {
+  description = "Client key from kube_config for the production cluster"
+  value       = base64decode(azurerm_kubernetes_cluster.prod.kube_config[0].client_key)
+  sensitive   = true
+}
+
+output "prod_kube_config_cluster_ca_certificate" {
+  description = "Cluster CA certificate from kube_config for the production cluster"
+  value       = base64decode(azurerm_kubernetes_cluster.prod.kube_config[0].cluster_ca_certificate)
   sensitive   = true
 }

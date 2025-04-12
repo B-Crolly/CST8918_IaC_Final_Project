@@ -1,7 +1,13 @@
 #NOTE: outputs must be defined at every level of the module hierarchy, so here (root), and in the network module
 # Define output values for later reference
 output "resource_group_name" {
-  value = azurerm_resource_group.rg.name
+  description = "Resource group name"
+  value       = azurerm_resource_group.rg.name
+}
+
+output "resource_group_location" {
+  description = "Resource group location"
+  value       = azurerm_resource_group.rg.location
 }
 
 output "public_ip" {
@@ -10,7 +16,8 @@ output "public_ip" {
 
 # Network module outputs
 output "vnet_id" {
-  value = module.network.vnet_id
+  description = "Virtual network ID"
+  value       = module.network.vnet_id
 }
 
 output "vnet_name" {
@@ -32,6 +39,7 @@ output "dev_subnet_id" {
 output "admin_subnet_id" {
   value = module.network.admin_subnet_id
 }
+
 # AKS module outputs
 output "test_cluster_id" {
   description = "ID of the test AKS cluster"
@@ -63,4 +71,31 @@ output "prod_kube_config" {
   description = "Kubeconfig for the production AKS cluster"
   value       = module.aks.prod_kube_config
   sensitive   = true
+}
+
+# Redis outputs
+output "test_redis_name" {
+  description = "Test Redis cache name"
+  value       = module.redis.test_redis_name
+}
+
+output "prod_redis_name" {
+  description = "Production Redis cache name"
+  value       = module.redis.prod_redis_name
+}
+
+# Application outputs
+output "acr_login_server" {
+  description = "Azure Container Registry login server"
+  value       = module.application.acr_login_server
+}
+
+output "test_service_endpoint" {
+  description = "Test Kubernetes service endpoint"
+  value       = module.application.test_service_endpoint
+}
+
+output "prod_service_endpoint" {
+  description = "Production Kubernetes service endpoint"
+  value       = module.application.prod_service_endpoint
 }
