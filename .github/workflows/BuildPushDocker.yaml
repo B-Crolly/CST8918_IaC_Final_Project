@@ -4,22 +4,41 @@ on:
   pull_request:
     branches:
       - main
-    paths: #paths to the weather app here
-      - 'app/**' # Only run when application code changes
+    paths:
+      - 'app/**'
+      - '*.tsx'
+      - '*.ts'
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'remix.config.js'
+      - 'tsconfig.json'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '*.tsx'
+      - '*.ts'
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'remix.config.js'
+      - 'tsconfig.json'
 
 #Special permissions required for OIDC authentication
 permissions:
   id-token: write
   contents: read
+  issues: write
+  pull-requests: write
 
 defaults:
   run:
-    working-directory: ./app/tf-app 
+    working-directory: ./
     
 jobs:
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
+    environment: test
 
     steps:
       - name: Checkout code
@@ -31,21 +50,32 @@ jobs:
       - name: Azure Login with OIDC
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID_RW }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Log in to Azure Container Registry (ACR)
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: 00000000-0000-0000-0000-000000000000  # Dummy (OIDC doesn't need this)
-          password: dummy
-          
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login -n $(echo "${{ secrets.ACR_LOGIN_SERVER }}" | cut -d'.' -f1)
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./app
-          file: ./app/Dockerfile
+          context: ./
+          file: ./Dockerfile
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.sha }}
+          
+      # Comment on PR
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `✅ Docker image built and pushed: \`${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.sha }}\``
+            })

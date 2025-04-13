@@ -46,3 +46,11 @@ node_modules
 software_requirements.txt
 infra/tf-app/secret.tfvars
 3-azure-credentials.md
+tall
+t
+redis_conn.txt
+k8s/test-deployment.yaml
+current-deployment.yaml
+local-test-deployment.yaml
+redis_url.txt
+resilient-deployment.yaml

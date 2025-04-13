@@ -45,30 +45,30 @@ provider "kubernetes" {
 # Kubernetes Secret for Test Environment
 resource "kubernetes_secret" "weather_app_secret_test" {
   provider = kubernetes.test
-  
+
   metadata {
-    name = "weather-app-secrets"
+    name      = "weather-app-secrets"
     namespace = "default"
   }
 
   data = {
     WEATHER_API_KEY = var.weather_api_key
-    REDIS_URL = "rediss://:${var.test_redis_key}@${var.test_redis_host}:${var.test_redis_port}"
+    REDIS_URL       = "rediss://:${var.test_redis_key}@${var.test_redis_host}:${var.test_redis_port}"
   }
 }
 
 # Kubernetes Secret for Production Environment
 resource "kubernetes_secret" "weather_app_secret_prod" {
   provider = kubernetes.prod
-  
+
   metadata {
-    name = "weather-app-secrets"
+    name      = "weather-app-secrets"
     namespace = "default"
   }
 
   data = {
     WEATHER_API_KEY = var.weather_api_key
-    REDIS_URL = "rediss://:${var.prod_redis_key}@${var.prod_redis_host}:${var.prod_redis_port}"
+    REDIS_URL       = "rediss://:${var.prod_redis_key}@${var.prod_redis_host}:${var.prod_redis_port}"
   }
 }
 
@@ -77,7 +77,7 @@ resource "kubernetes_deployment" "weather_app_test" {
   provider = kubernetes.test
 
   metadata {
-    name = "weather-app"
+    name      = "weather-app"
     namespace = "default"
     labels = {
       app = "weather-app"
@@ -128,7 +128,7 @@ resource "kubernetes_deployment" "weather_app_test" {
               }
             }
           }
-          
+
           # Update resource limits to more reasonable values
           resources {
             requests = {
@@ -151,7 +151,7 @@ resource "kubernetes_service" "weather_app_test" {
   provider = kubernetes.test
 
   metadata {
-    name = "weather-app"
+    name      = "weather-app"
     namespace = "default"
   }
 
@@ -159,7 +159,7 @@ resource "kubernetes_service" "weather_app_test" {
     selector = {
       app = "weather-app"
     }
-    
+
     port {
       port        = 80
       target_port = 3000
@@ -174,7 +174,7 @@ resource "kubernetes_deployment" "weather_app_prod" {
   provider = kubernetes.prod
 
   metadata {
-    name = "weather-app"
+    name      = "weather-app"
     namespace = "default"
     labels = {
       app = "weather-app"
@@ -225,7 +225,7 @@ resource "kubernetes_deployment" "weather_app_prod" {
               }
             }
           }
-          
+
           # Update resource limits to more reasonable values
           resources {
             requests = {
@@ -248,7 +248,7 @@ resource "kubernetes_service" "weather_app_prod" {
   provider = kubernetes.prod
 
   metadata {
-    name = "weather-app"
+    name      = "weather-app"
     namespace = "default"
   }
 
@@ -256,7 +256,7 @@ resource "kubernetes_service" "weather_app_prod" {
     selector = {
       app = "weather-app"
     }
-    
+
     port {
       port        = 80
       target_port = 3000

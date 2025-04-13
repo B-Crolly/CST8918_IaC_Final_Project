@@ -58,7 +58,7 @@ The application code and the infrastructure code should be in the same repositor
     - 1 node
     - Standard B2s VM size
     - Kubernetes version 1.32
-  - Create an AKS cluster in the `prod` environment
+  - Create an AKS cluster in the `prod` environments
     - min 1 node
     - max 3 nodes
     - Standard B2s VM size

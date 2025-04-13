@@ -3,6 +3,7 @@ import { useLoaderData } from '@remix-run/react'
 import { fetchWeatherData } from '../api-services/open-weather-service'
 import { capitalizeFirstLetter } from '../utils/text-formatting'
 import type { MetaFunction } from '@remix-run/node'
+import { redisConnectionError } from '../data-access/redis-connection'
 
 export const meta: MetaFunction = () => {
   return [
@@ -24,42 +25,80 @@ const location = {
 const units = 'metric'
 
 export async function loader() {
-  console.log("Loader running with API key:", process.env.WEATHER_API_KEY ? "Present" : "Missing");
-  console.log("Redis URL:", process.env.REDIS_URL ? "Present" : "Missing");
+  // TODO: accept query params for location and units
+  // TODO: look up location by postal code
 
   try {
+    // Check Redis connection status first
+    const hasRedisError = redisConnectionError !== null;
+    const redisErrorMessage = hasRedisError && redisConnectionError ? redisConnectionError.message : null;
+    
     const data = await fetchWeatherData({
       lat: location.lat,
       lon: location.lon,
       units: units,
-    });
-    return json({ currentConditions: data });
+    })
+    
+    return json({
+      currentConditions: data,
+      cacheStatus: data._cache_status,
+      redisError: redisErrorMessage,
+      error: null
+    })
   } catch (error) {
-    console.error("Error fetching weather data:", error);
-    return json({ error: "Failed to fetch weather data" }, { status: 500 });
+    console.error('Failed to fetch weather data:', error)
+    let errorMessage = 'An unexpected error occurred'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Redis connection error')) {
+        errorMessage = 'Redis server is unavailable. Weather data cannot be cached.'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
+    return json({ 
+      currentConditions: null, 
+      cacheStatus: 'ERROR',
+      redisError: redisConnectionError?.message,
+      error: errorMessage 
+    })
   }
 }
 
-export default function Index() {
-  const data = useLoaderData<typeof loader>();
+export default function CurrentConditions() {
+  const { currentConditions, error, cacheStatus, redisError } = useLoaderData<typeof loader>()
   
-  // Type guard to check if data has error property
-  const hasError = (obj: any): obj is { error: string } => {
-    return 'error' in obj;
-  };
-  
-  if (hasError(data)) {
+  // If there's a major error, display it
+  if (error) {
     return (
-      <div style={{ color: 'red', padding: '1rem' }}>
-        <h1>Error</h1>
-        <p>{data.error}</p>
-      </div>
-    );
+      <main style={{
+        padding: '1.5rem',
+        fontFamily: 'system-ui, sans-serif',
+        lineHeight: '1.8',
+      }}>
+        <h1>Remix Weather App</h1>
+        <div style={{
+          backgroundColor: '#FEE2E2',
+          color: '#B91C1C',
+          padding: '1rem',
+          borderRadius: '0.25rem',
+          marginTop: '1rem',
+          marginBottom: '1rem',
+          border: '1px solid #F87171'
+        }}>
+          <h2>Error</h2>
+          <p>{error}</p>
+        </div>
+        <p>
+          Please try again later or contact support if this issue persists.
+        </p>
+      </main>
+    )
   }
   
-  const { currentConditions } = data;
-  const weather = currentConditions.weather[0];
-  
+  // Otherwise, display weather data
+  const weather = currentConditions.weather[0]
   return (
     <>
       <main
@@ -69,7 +108,24 @@ export default function Index() {
           lineHeight: '1.8',
         }}
       >
-        <h1>Remix Weather</h1>
+        <h1>Remix Weather- CI/CD Test 1 & 2</h1>
+        
+        {/* Redis error notification */}
+        {redisError && (
+          <div style={{
+            backgroundColor: '#FEF3C7',
+            color: '#92400E',
+            padding: '0.75rem',
+            borderRadius: '0.25rem',
+            marginTop: '0.5rem',
+            marginBottom: '1rem',
+            border: '1px solid #F59E0B',
+            fontSize: '0.9rem'
+          }}>
+            <strong>Redis Cache Unavailable:</strong> {redisError}
+          </div>
+        )}
+        
         <p>
           For Algonquin College, Woodroffe Campus <br />
           <span style={{ color: 'hsl(220, 23%, 60%)' }}>
@@ -108,6 +164,7 @@ export default function Index() {
               hour: 'numeric',
               minute: '2-digit',
             }).format(currentConditions.dt * 1000)}
+            {' '}- Cache Status: <span style={{fontWeight: 'bold'}}>{cacheStatus}</span>
           </span>
         </p>
       </main>
