@@ -14,7 +14,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: ./infra/tf-app  
+    working-directory: ./app/tf-app 
     
 jobs:
   build-and-push:

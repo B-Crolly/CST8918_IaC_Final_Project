@@ -11,19 +11,28 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/**'
+      
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
 
 env:
   TF_VERSION: '1.5.0'
   AZURE_RESOURCE_GROUP: 'your-aks-resource-group'
   AZURE_AKS_CLUSTER: 'your-aks-cluster-name'
   APP_DIR: './app'
+
+defaults:
+  run:
+    working-directory: ./app/tf-app  
   
 
 jobs:
   deploy:
     name: Deploy to AKS
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
