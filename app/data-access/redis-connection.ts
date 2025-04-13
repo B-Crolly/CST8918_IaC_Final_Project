@@ -12,15 +12,8 @@ try {
   const client = createClient({ 
     url,
     socket: {
-      reconnectStrategy: (retries) => {
-        console.log(`[REDIS] Connection retry attempt ${retries}`)
-        if (retries > 3) {
-          console.error('[REDIS] Max retries reached, stopping reconnection attempts')
-          redisConnectionError = new Error('Redis connection failed after multiple attempts')
-          return new Error('Max retries reached')
-        }
-        return Math.min(retries * 100, 3000) // Increasing backoff
-      }
+      // Reduce the reconnection attempts to fail faster
+      reconnectStrategy: false // Disable automatic reconnection
     }
   })
   
@@ -34,14 +27,11 @@ try {
     redisConnectionError = null
   })
   
-  client.on('reconnecting', () => {
-    console.log('[REDIS] Attempting to reconnect')
-  })
-  
-  // Attempt to connect with a timeout
+  // Attempt to connect with a short timeout
   const connectPromise = client.connect()
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Connection timeout')), 5000)
+    // Reduce timeout to fail faster - only wait 1 second
+    setTimeout(() => reject(new Error('Redis connection timeout')), 1000)
   })
   
   redis = await Promise.race([connectPromise, timeoutPromise])
@@ -49,7 +39,7 @@ try {
     .catch((err) => {
       console.error('[REDIS] Failed to connect:', err.message)
       redisConnectionError = err
-      // Return the client anyway, operations will fail and be handled by the app
+      // Return the client anyway, but with error state set
       return client
     })
 } catch (error) {

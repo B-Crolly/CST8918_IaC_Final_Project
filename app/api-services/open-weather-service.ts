@@ -17,38 +17,55 @@ export async function fetchWeatherData({
 }: FetchWeatherDataParams) {
   const queryString = `lat=${lat}&lon=${lon}&units=${units}`
 
-  // Check if Redis connection is working
+  // Immediately check for Redis errors - fail fast
   if (redisConnectionError) {
-    throw new Error(`Redis connection error: ${redisConnectionError.message}`)
+    console.warn('[WEATHER] Redis is unavailable, bypassing cache:', redisConnectionError.message)
+    // Instead of throwing, immediately fetch from the API
+    const response = await fetch(`${BASE_URL}?${queryString}&appid=${API_KEY}`)
+    const data = await response.json()
+    return {
+      ...data,
+      _cache_status: 'REDIS_ERROR'  // Add flag to indicate cache status
+    }
   }
 
   try {
-    // Try to get from cache if Redis is connected
+    // Try to get from cache
     const cacheEntry = await redis.get(queryString)
-    if (cacheEntry) return JSON.parse(cacheEntry)
+    if (cacheEntry) {
+      const data = JSON.parse(cacheEntry)
+      return {
+        ...data,
+        _cache_status: 'HIT'  // Add flag to indicate cache hit
+      }
+    }
 
     // Fetch from API if not in cache
     const response = await fetch(`${BASE_URL}?${queryString}&appid=${API_KEY}`)
     const data = await response.text() // avoid an unnecessary extra JSON.stringify
     
-    // Try to cache it, but don't fail if Redis is down
+    // Try to cache it, but don't fail if Redis errors
     try {
       await redis.set(queryString, data, { PX: TEN_MINUTES }) 
     } catch (cacheError) {
       console.error('[WEATHER] Failed to cache weather data:', cacheError)
     }
     
-    return JSON.parse(data)
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Redis connection error')) {
-      throw error; // Re-throw Redis connection errors
+    const parsedData = JSON.parse(data)
+    return {
+      ...parsedData,
+      _cache_status: 'MISS'  // Add flag to indicate cache miss
     }
+  } catch (error) {
+    console.error('[WEATHER] Error fetching weather data, using direct API call:', error)
     
-    // For other errors, try direct API call as fallback
-    console.error('[WEATHER] Error fetching weather data, trying direct API call:', error)
+    // Fallback to direct API call
     const response = await fetch(`${BASE_URL}?${queryString}&appid=${API_KEY}`)
     const data = await response.json()
-    return data
+    return {
+      ...data,
+      _cache_status: 'ERROR'  // Add flag to indicate error
+    }
   }
 }
 
