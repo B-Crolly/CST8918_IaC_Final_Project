@@ -17,16 +17,16 @@ resource "azurerm_kubernetes_cluster" "test" {
   dns_prefix          = "${var.label_prefix}-aks-test"
 
   default_node_pool {
-    name            = "testnp"
-    node_count      = 1
+    name           = "testnp"
+    node_count     = 1
     vm_size        = "Standard_B2s"
     vnet_subnet_id = var.test_subnet_id
   }
 
   network_profile {
-    network_plugin    = "azure"
-    service_cidr     = "172.16.0.0/16"  # Different range from VNet
-    dns_service_ip   = "172.16.0.10"    # Must be within service_cidr
+    network_plugin = "azure"
+    service_cidr   = "172.16.0.0/16" # Different range from VNet
+    dns_service_ip = "172.16.0.10"   # Must be within service_cidr
   }
 
   identity {
@@ -44,18 +44,18 @@ resource "azurerm_kubernetes_cluster" "prod" {
   dns_prefix          = "${var.label_prefix}-aks-prod"
 
   default_node_pool {
-    name                = "prodnp"
-    vm_size            = "Standard_B2s"
-    vnet_subnet_id     = var.prod_subnet_id
+    name                 = "prodnp"
+    vm_size              = "Standard_B2s"
+    vnet_subnet_id       = var.prod_subnet_id
     auto_scaling_enabled = true
-    min_count          = 1
-    max_count          = 3
+    min_count            = 1
+    max_count            = 3
   }
 
   network_profile {
-    network_plugin    = "azure"
-    service_cidr     = "172.16.0.0/16"  # Different range from VNet
-    dns_service_ip   = "172.16.0.10"    # Must be within service_cidr
+    network_plugin = "azure"
+    service_cidr   = "172.16.0.0/16" # Different range from VNet
+    dns_service_ip = "172.16.0.10"   # Must be within service_cidr
   }
 
   identity {

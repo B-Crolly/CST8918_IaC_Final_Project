@@ -78,9 +78,9 @@ resource "azurerm_network_interface" "webserver" {
     name                          = "${var.label_prefix}-NicConfig"
     subnet_id                     = azurerm_subnet.prod.id
     private_ip_address_allocation = "Static"
-    private_ip_address           = "10.0.1.10"
+    private_ip_address            = "10.0.1.10"
   }
-  
+
   lifecycle {
     create_before_destroy = true
   }

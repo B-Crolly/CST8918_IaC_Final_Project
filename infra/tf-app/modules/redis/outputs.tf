@@ -45,7 +45,7 @@ output "test_redis_name" {
 }
 
 output "prod_redis_name" {
-  description = "Name of the Redis Cache in the production environment" 
+  description = "Name of the Redis Cache in the production environment"
   value       = azurerm_redis_cache.redis_prod.name
 }
 
