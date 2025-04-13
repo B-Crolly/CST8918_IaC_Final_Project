@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "remix build",
-    "dev": "dotenv -e .env remix dev --manual",
+    "dev": "node -r dotenv/config node_modules/@remix-run/dev/dist/cli.js dev",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
-    "start": "dotenv -e .env remix-serve ./build/index.js",
+    "start": "node -r dotenv/config node_modules/@remix-run/serve/dist/cli.js build",
     "typecheck": "tsc"
   },
   "dependencies": {
