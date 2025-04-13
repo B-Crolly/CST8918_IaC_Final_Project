@@ -1,69 +1,61 @@
-name: Terraform Deploy to AKS
+name: Deploy Remix Weather App to AKS
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'app/**'
-      - 'routes/**'
-      - 'public/**'
-      - 'package.json'
-      - 'remix.config.js'
-      - 'infra/**'
+      - '.github/workflows/**'
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'app/**'
-      - 'routes/**'
-      - 'public/**'
-      - 'package.json'
-      - 'remix.config.js'
-      - 'infra/**'
+      - '.github/workflows/**'
+
+env:
+  TF_VERSION: '1.5.0'
+  AZURE_RESOURCE_GROUP: 'your-aks-resource-group'
+  AZURE_AKS_CLUSTER: 'your-aks-cluster-name'
+  APP_DIR: './app'
+  
 
 jobs:
   deploy:
+    name: Deploy to AKS
     runs-on: ubuntu-latest
-
-    env:
-      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-
+    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Set environment
-        id: set-env
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "env=test" >> $GITHUB_OUTPUT
-          else
-            echo "env=production" >> $GITHUB_OUTPUT
-          fi
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AZURE_AKS_CLUSTER }}
 
       - name: Terraform Init
-        working-directory: infra
-        run: terraform init -backend-config="env/${{ steps.set-env.outputs.env }}.tfbackend"
-
-      - name: Terraform Validate
-        working-directory: infra
-        run: terraform validate
-
-      - name: Terraform Plan
-        working-directory: infra
-        run: terraform plan -var-file="env/${{ steps.set-env.outputs.env }}.tfvars"
+        working-directory: terraform/
+        run: terraform init
 
       - name: Terraform Apply
-        if: github.event_name == 'push' || github.event_name == 'pull_request'
-        working-directory: infra
-        run: terraform apply -auto-approve -var-file="env/${{ steps.set-env.outputs.env }}.tfvars"
+        working-directory: terraform/
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_environment: ${{ github.event_name == 'push' && 'production' || 'test' }}
+
+      - name: Deploy Application to AKS
+        run: |
+          kubectl apply -f k8s/${{ github.event_name == 'push' && 'production' || 'test' }}-deployment.yaml
+        working-directory: ${{ env.APP_DIR }}
 
