@@ -68,15 +68,7 @@ resource "azurerm_network_security_group" "webserver" {
   }
 }
 
-# Define a public IP address
-resource "azurerm_public_ip" "webserver" {
-  name                = "${var.label_prefix}-PublicIP"
-  location            = var.region
-  resource_group_name = var.resource_group_name
-  allocation_method   = "Static"
-}
-
-# Define the network interface
+# Define network interface (without public IP)
 resource "azurerm_network_interface" "webserver" {
   name                = "${var.label_prefix}-Nic"
   location            = var.region
@@ -87,7 +79,6 @@ resource "azurerm_network_interface" "webserver" {
     subnet_id                     = azurerm_subnet.prod.id
     private_ip_address_allocation = "Static"
     private_ip_address           = "10.0.1.10"
-    public_ip_address_id          = azurerm_public_ip.webserver.id
   }
   
   lifecycle {

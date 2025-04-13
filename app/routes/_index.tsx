@@ -24,20 +24,42 @@ const location = {
 const units = 'metric'
 
 export async function loader() {
-  // TODO: accept query params for location and units
-  // TODO: look up location by postal code
+  console.log("Loader running with API key:", process.env.WEATHER_API_KEY ? "Present" : "Missing");
+  console.log("Redis URL:", process.env.REDIS_URL ? "Present" : "Missing");
 
-  const data = await fetchWeatherData({
-    lat: location.lat,
-    lon: location.lon,
-    units: units,
-  })
-  return json({ currentConditions: data })
+  try {
+    const data = await fetchWeatherData({
+      lat: location.lat,
+      lon: location.lon,
+      units: units,
+    });
+    return json({ currentConditions: data });
+  } catch (error) {
+    console.error("Error fetching weather data:", error);
+    return json({ error: "Failed to fetch weather data" }, { status: 500 });
+  }
 }
 
-export default function CurrentConditions() {
-  const { currentConditions } = useLoaderData<typeof loader>()
-  const weather = currentConditions.weather[0]
+export default function Index() {
+  const data = useLoaderData<typeof loader>();
+  
+  // Type guard to check if data has error property
+  const hasError = (obj: any): obj is { error: string } => {
+    return 'error' in obj;
+  };
+  
+  if (hasError(data)) {
+    return (
+      <div style={{ color: 'red', padding: '1rem' }}>
+        <h1>Error</h1>
+        <p>{data.error}</p>
+      </div>
+    );
+  }
+  
+  const { currentConditions } = data;
+  const weather = currentConditions.weather[0];
+  
   return (
     <>
       <main
