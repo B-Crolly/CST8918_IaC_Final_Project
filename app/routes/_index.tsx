@@ -43,7 +43,12 @@ export async function loader() {
 export default function Index() {
   const data = useLoaderData<typeof loader>();
   
-  if (data.error) {
+  // Type guard to check if data has error property
+  const hasError = (obj: any): obj is { error: string } => {
+    return 'error' in obj;
+  };
+  
+  if (hasError(data)) {
     return (
       <div style={{ color: 'red', padding: '1rem' }}>
         <h1>Error</h1>

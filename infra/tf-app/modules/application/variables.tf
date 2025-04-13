@@ -14,6 +14,17 @@ variable "resource_group_name" {
   type        = string
 }
 
+# AKS Cluster Principal IDs for ACR access
+variable "test_cluster_principal_id" {
+  description = "The principal ID of the test AKS cluster's managed identity"
+  type        = string
+}
+
+variable "prod_cluster_principal_id" {
+  description = "The principal ID of the production AKS cluster's managed identity"
+  type        = string
+}
+
 # AKS Cluster Connection Details - Test
 variable "test_cluster_host" {
   description = "The Kubernetes cluster server host for the test cluster"

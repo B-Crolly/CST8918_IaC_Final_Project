@@ -1,0 +1,27 @@
+# Terraform
+infra/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraformrc
+
+# Git
+.git/
+.gitignore
+
+# Node
+node_modules/
+npm-debug.log
+
+# Environment
+.env
+.env.*
+
+# Build artifacts
+build/
+dist/
+
+# Misc
+.cache/
+.vscode/ 

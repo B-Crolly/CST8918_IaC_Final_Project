@@ -86,3 +86,13 @@ output "prod_kube_config_cluster_ca_certificate" {
   value       = base64decode(azurerm_kubernetes_cluster.prod.kube_config[0].cluster_ca_certificate)
   sensitive   = true
 }
+
+output "test_cluster_principal_id" {
+  description = "The principal ID of the test AKS cluster's managed identity"
+  value       = azurerm_kubernetes_cluster.test.identity[0].principal_id
+}
+
+output "prod_cluster_principal_id" {
+  description = "The principal ID of the production AKS cluster's managed identity"
+  value       = azurerm_kubernetes_cluster.prod.identity[0].principal_id
+}

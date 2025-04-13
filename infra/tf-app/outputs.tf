@@ -10,10 +10,6 @@ output "resource_group_location" {
   value       = azurerm_resource_group.rg.location
 }
 
-output "public_ip" {
-  value = module.network.public_ip_address
-}
-
 # Network module outputs
 output "vnet_id" {
   description = "Virtual network ID"

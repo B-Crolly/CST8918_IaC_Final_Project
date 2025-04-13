@@ -8,6 +8,22 @@ resource "azurerm_container_registry" "acr" {
   admin_enabled       = true
 }
 
+# Grant AKS test cluster access to ACR
+resource "azurerm_role_assignment" "acr_pull_test" {
+  principal_id                     = var.test_cluster_principal_id
+  role_definition_name             = "AcrPull"
+  scope                            = azurerm_container_registry.acr.id
+  skip_service_principal_aad_check = true
+}
+
+# Grant AKS production cluster access to ACR
+resource "azurerm_role_assignment" "acr_pull_prod" {
+  principal_id                     = var.prod_cluster_principal_id
+  role_definition_name             = "AcrPull"
+  scope                            = azurerm_container_registry.acr.id
+  skip_service_principal_aad_check = true
+}
+
 # Create Kubernetes Provider Configuration for Test Environment
 provider "kubernetes" {
   alias                  = "test"
@@ -63,6 +79,9 @@ resource "kubernetes_deployment" "weather_app_test" {
   metadata {
     name = "weather-app"
     namespace = "default"
+    labels = {
+      app = "weather-app"
+    }
   }
 
   spec {
@@ -85,25 +104,40 @@ resource "kubernetes_deployment" "weather_app_test" {
         container {
           image = "${azurerm_container_registry.acr.login_server}/weather-app:${var.image_tag}"
           name  = "weather-app"
-          
+
           port {
             container_port = var.container_port
           }
-          
-          env_from {
-            secret_ref {
-              name = kubernetes_secret.weather_app_secret_test.metadata[0].name
+
+          env {
+            name = "WEATHER_API_KEY"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.weather_app_secret_test.metadata[0].name
+                key  = "WEATHER_API_KEY"
+              }
             }
           }
 
-          resources {
-            limits = {
-              cpu    = "1"
-              memory = "1Gi"
+          env {
+            name = "REDIS_URL"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.weather_app_secret_test.metadata[0].name
+                key  = "REDIS_URL"
+              }
             }
+          }
+          
+          # Update resource limits to more reasonable values
+          resources {
             requests = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+            limits = {
               cpu    = "500m"
-              memory = "512Mi"
+              memory = "256Mi"
             }
           }
         }
@@ -123,12 +157,12 @@ resource "kubernetes_service" "weather_app_test" {
 
   spec {
     selector = {
-      app = kubernetes_deployment.weather_app_test.metadata[0].labels.app
+      app = "weather-app"
     }
     
     port {
       port        = 80
-      target_port = var.container_port
+      target_port = 3000
     }
 
     type = "ClusterIP"
@@ -142,10 +176,13 @@ resource "kubernetes_deployment" "weather_app_prod" {
   metadata {
     name = "weather-app"
     namespace = "default"
+    labels = {
+      app = "weather-app"
+    }
   }
 
   spec {
-    replicas = 2
+    replicas = 1
 
     selector {
       match_labels = {
@@ -164,25 +201,40 @@ resource "kubernetes_deployment" "weather_app_prod" {
         container {
           image = "${azurerm_container_registry.acr.login_server}/weather-app:${var.image_tag}"
           name  = "weather-app"
-          
+
           port {
             container_port = var.container_port
           }
-          
-          env_from {
-            secret_ref {
-              name = kubernetes_secret.weather_app_secret_prod.metadata[0].name
+
+          env {
+            name = "WEATHER_API_KEY"
+            value_from {
+              secret_key_ref {
+                name = "weather-app-secrets"
+                key  = "WEATHER_API_KEY"
+              }
             }
           }
 
-          resources {
-            limits = {
-              cpu    = "1"
-              memory = "1Gi"
+          env {
+            name = "REDIS_URL"
+            value_from {
+              secret_key_ref {
+                name = "weather-app-secrets"
+                key  = "REDIS_URL"
+              }
             }
+          }
+          
+          # Update resource limits to more reasonable values
+          resources {
             requests = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+            limits = {
               cpu    = "500m"
-              memory = "512Mi"
+              memory = "256Mi"
             }
           }
         }
@@ -202,12 +254,12 @@ resource "kubernetes_service" "weather_app_prod" {
 
   spec {
     selector = {
-      app = kubernetes_deployment.weather_app_prod.metadata[0].labels.app
+      app = "weather-app"
     }
     
     port {
       port        = 80
-      target_port = var.container_port
+      target_port = 3000
     }
 
     type = "LoadBalancer"
