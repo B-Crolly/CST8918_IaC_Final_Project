@@ -1,7 +1,8 @@
-name: 'Terraform Static Tests'
+name: 'Terraform Static Analysis'
 
 on:
   push:
+    - '**' #any branch
 
 defaults:
   run:
@@ -14,7 +15,7 @@ permissions:
 
 jobs:
   terraform-static-tests:
-    name: 'Terraform Static Tests'
+    name: 'Terraform Static Analysis'
     runs-on: ubuntu-latest
     
     steps:
@@ -22,21 +23,20 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    # Install the latest version of Terraform CL
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
 
-    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
-    # The -backend=false flag is used to prevent Terraform from using the remote backend, which is not needed for static tests.
+    # Initialize Terraform 
+    # The -backend=false flag is used to prevent Terraform from using the remote backend.
     - name: Terraform Init
       run: terraform init -backend=false
 
-    # Validate terraform files
+    # Validate terraform
     - name: Terraform Validate
       run: terraform validate
 
-    # Checks that all Terraform configuration files adhere to a canonical format
-    # Note: This will not modify files, but will exit with a non-zero status if any files need formatting
+    # Checks that all Terraform configs adhere to format
     - name: Terraform Format
       run: terraform fmt -check -recursive
 

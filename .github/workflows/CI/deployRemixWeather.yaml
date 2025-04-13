@@ -1,0 +1,62 @@
+name: Deploy Remix Weather App to AKS
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'routes/**'
+      - 'public/**'
+      - 'package.json'
+      - 'remix.config.js'
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'routes/**'
+      - 'public/**'
+      - 'package.json'
+      - 'remix.config.js'
+
+jobs:
+  deploy:
+    name: Deploy Weather
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the Weather app
+        run: npm run build
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+          cluster-name: 'YOUR_AKS_CLUSTER_NAME'
+          resource-group: 'YOUR_RESOURCE_GROUP'
+
+      - name: Determine Environment
+        id: set-env
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "env=test" >> $GITHUB_OUTPUT
+          else
+            echo "env=production" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to ${{ steps.set-env.outputs.env }} environment
+        run: |
+          echo "Deploying ${{ steps.set-env.outputs.env }} environment."
+          kubectl apply -f k8s/${{ steps.set-env.outputs.env }}/

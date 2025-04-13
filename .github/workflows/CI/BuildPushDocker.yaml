@@ -1,0 +1,57 @@
+name: Build & Push Docker Image
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/**'          # Only trigger when application code changes
+      - '.github/workflows/docker-build-push.yml' # Always run if workflow itself is changed
+
+defaults:
+  run:
+    working-directory: ./infra/tf-app
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+#These environment variables are used by the terraform azure provider to setup OIDD authenticate. 
+env:
+  ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+  ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+  ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+  ARM_ACCESS_KEY: "${{ secrets.ARM_ACCESS_KEY }}"
+
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build and Push Docker Image
+        run: |
+          COMMIT_SHA=${{ github.sha }}
+          ACR_LOGIN_SERVER="${{ secrets.ACR_NAME }}.azurecr.io"
+          IMAGE_NAME="$ACR_LOGIN_SERVER/app:${COMMIT_SHA}"
+
+          echo "Building Docker image: $IMAGE_NAME"
+
+          docker build -t $IMAGE_NAME ./app
+          docker push $IMAGE_NAME
