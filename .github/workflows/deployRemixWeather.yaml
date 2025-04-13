@@ -1,0 +1,69 @@
+name: Deploy Remix Weather App to AKS
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/**'
+      
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+#These environment variables are used by the terraform azure provider to setup OIDD authenticate. 
+env:
+  ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+  ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+  ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+  ARM_ACCESS_KEY: "${{ secrets.ARM_ACCESS_KEY }}"
+
+defaults:
+  run:
+    working-directory: ./app/tf-app  
+  
+
+jobs:
+  deploy:
+    name: Deploy to AKS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AZURE_AKS_CLUSTER }}
+
+      - name: Terraform Init
+        working-directory: terraform/
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform/
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_environment: ${{ github.event_name == 'push' && 'production' || 'test' }}
+
+      - name: Deploy Application to AKS
+        run: |
+          kubectl apply -f k8s/${{ github.event_name == 'push' && 'production' || 'test' }}-deployment.yaml
+        working-directory: ${{ env.APP_DIR }}
+

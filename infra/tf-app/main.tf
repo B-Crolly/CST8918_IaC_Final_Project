@@ -65,17 +65,17 @@ module "application" {
   prod_cluster_ca_certificate = module.aks.prod_kube_config_cluster_ca_certificate
 
   # Redis connection info from Redis module outputs
-  test_redis_host     = module.redis.test_redis_host
-  test_redis_port     = module.redis.test_redis_ssl_port
-  test_redis_key      = module.redis.test_redis_primary_key
-  prod_redis_host     = module.redis.prod_redis_host
-  prod_redis_port     = module.redis.prod_redis_ssl_port
-  prod_redis_key      = module.redis.prod_redis_primary_key
+  test_redis_host = module.redis.test_redis_host
+  test_redis_port = module.redis.test_redis_ssl_port
+  test_redis_key  = module.redis.test_redis_primary_key
+  prod_redis_host = module.redis.prod_redis_host
+  prod_redis_port = module.redis.prod_redis_ssl_port
+  prod_redis_key  = module.redis.prod_redis_primary_key
 
   # Weather API key - will be populated by GitHub Action or from tfvars
-  weather_api_key     = var.weather_api_key
+  weather_api_key = var.weather_api_key
 
   # Container image settings
-  image_tag           = var.image_tag
-  container_port      = 80
+  image_tag      = var.image_tag
+  container_port = 80
 } 
