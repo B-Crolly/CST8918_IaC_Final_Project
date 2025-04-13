@@ -45,20 +45,20 @@ defaults:
     working-directory: ./
   
 jobs:
-  # Call the build workflow first
-  build:
-    uses: ./.github/workflows/BuildPushDocker.yaml
-
-  # Then deploy after build completes
   deploy:
     name: Deploy to AKS
-    needs: [build] # Wait for build to complete before deploying
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'push' && 'production' || 'test' }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # Wait for image to be available in ACR (give time for BuildPushDocker workflow to complete)
+      - name: Wait for Docker image
+        run: |
+          echo "Waiting 90 seconds for Docker image to be available in ACR..."
+          sleep 90
 
       - name: Azure Login
         uses: azure/login@v1
