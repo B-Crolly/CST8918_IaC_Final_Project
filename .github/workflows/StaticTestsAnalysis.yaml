@@ -2,7 +2,8 @@ name: 'Terraform Static Analysis'
 
 on:
   push:
-    - '**' #any branch
+    branches:
+      - '**'  # Runs on push to any branch
 
 defaults:
   run:
