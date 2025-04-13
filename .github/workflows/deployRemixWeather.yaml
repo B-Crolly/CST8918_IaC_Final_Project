@@ -5,19 +5,31 @@ on:
     branches: [main]
     paths:
       - 'app/**'
-      - '.github/workflows/**'
+      - '*.tsx'
+      - '*.ts'
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'remix.config.js'
+      - 'tsconfig.json'
+      - 'k8s/**'
   push:
     branches: [main]
     paths:
       - 'app/**'
-      - '.github/workflows/**'
+      - '*.tsx'
+      - '*.ts'
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'remix.config.js'
+      - 'tsconfig.json'
+      - 'k8s/**'
       
 permissions:
   id-token: write
   contents: read
   pull-requests: write
 
-#These environment variables are used by the terraform azure provider to setup OIDD authenticate. 
+#These environment variables are used by the terraform azure provider to setup OIDC authenticate. 
 env:
   ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID_RW }}"
   ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
@@ -26,24 +38,22 @@ env:
   # AKS cluster information
   AZURE_RESOURCE_GROUP: "cst8918-final-project-group-1-RG"
   AZURE_AKS_CLUSTER: "${{ github.event_name == 'push' && 'cst8918-final-project-group-1-aks-prod' || 'cst8918-final-project-group-1-aks-test' }}"
-  APP_DIR: "./app"
+  ENVIRONMENT: "${{ github.event_name == 'push' && 'production' || 'test' }}"
 
 defaults:
   run:
-    working-directory: ./app
+    working-directory: ./
   
 jobs:
   deploy:
     name: Deploy to AKS
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'push' && 'production' || 'test' }}
-
+    # Image should be built by the BuildPushDocker workflow first
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
 
       - name: Azure Login
         uses: azure/login@v1
@@ -58,18 +68,72 @@ jobs:
           resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
           cluster-name: ${{ env.AZURE_AKS_CLUSTER }}
 
-      - name: Terraform Init
-        working-directory: terraform/
-        run: terraform init
-
-      - name: Terraform Apply
-        working-directory: terraform/
-        run: terraform apply -auto-approve
-        env:
-          TF_VAR_environment: ${{ github.event_name == 'push' && 'production' || 'test' }}
-
-      - name: Deploy Application to AKS
+      - name: Create K8s directory if it doesn't exist
         run: |
-          kubectl apply -f k8s/${{ github.event_name == 'push' && 'production' || 'test' }}-deployment.yaml
-        working-directory: ${{ env.APP_DIR }}
+          mkdir -p k8s
+          
+      - name: Generate K8s deployment file
+        run: |
+          cat > k8s/${{ env.ENVIRONMENT }}-deployment.yaml << EOF
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: weather-app-${{ env.ENVIRONMENT }}
+            labels:
+              app: weather-app
+              environment: ${{ env.ENVIRONMENT }}
+          spec:
+            replicas: ${{ github.event_name == 'push' && '3' || '1' }}
+            selector:
+              matchLabels:
+                app: weather-app
+                environment: ${{ env.ENVIRONMENT }}
+            template:
+              metadata:
+                labels:
+                  app: weather-app
+                  environment: ${{ env.ENVIRONMENT }}
+              spec:
+                containers:
+                - name: weather-app
+                  image: ${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.sha }}
+                  ports:
+                  - containerPort: 3000
+                  env:
+                  - name: WEATHER_API_KEY
+                    value: "${{ secrets.WEATHER_API_KEY }}"
+                  - name: REDIS_CONNECTION_STRING
+                    value: "${{ secrets.REDIS_CONNECTION_STRING }}"
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: weather-app-service-${{ env.ENVIRONMENT }}
+          spec:
+            selector:
+              app: weather-app
+              environment: ${{ env.ENVIRONMENT }}
+            ports:
+            - port: 80
+              targetPort: 3000
+            type: LoadBalancer
+          EOF
+
+      - name: Deploy to AKS
+        run: |
+          kubectl apply -f k8s/${{ env.ENVIRONMENT }}-deployment.yaml
+          echo "Deployed to ${{ env.ENVIRONMENT }} environment"
+          
+      - name: Comment on PR about deployment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Application deployed to TEST environment`
+            })
 

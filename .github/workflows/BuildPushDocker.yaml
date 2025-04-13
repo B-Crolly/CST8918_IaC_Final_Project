@@ -4,8 +4,14 @@ on:
   pull_request:
     branches:
       - main
-    paths: #paths to the weather app here
-      - 'app/**' # Only run when application code changes
+    paths:
+      - 'app/**'
+      - '*.tsx'
+      - '*.ts'
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'remix.config.js'
+      - 'tsconfig.json'
 
 #Special permissions required for OIDC authentication
 permissions:
@@ -14,12 +20,13 @@ permissions:
 
 defaults:
   run:
-    working-directory: ./app
+    working-directory: ./
     
 jobs:
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
+    environment: test
 
     steps:
       - name: Checkout code
@@ -45,7 +52,19 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./app
-          file: ./app/Dockerfile
+          context: ./
+          file: ./Dockerfile
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.sha }}
+          
+      - name: Comment PR with Image Info
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Docker image built and pushed: \`${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.sha }}\``
+            })

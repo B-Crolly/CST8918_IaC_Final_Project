@@ -24,42 +24,20 @@ const location = {
 const units = 'metric'
 
 export async function loader() {
-  console.log("Loader running with API key:", process.env.WEATHER_API_KEY ? "Present" : "Missing");
-  console.log("Redis URL:", process.env.REDIS_URL ? "Present" : "Missing");
+  // TODO: accept query params for location and units
+  // TODO: look up location by postal code
 
-  try {
-    const data = await fetchWeatherData({
-      lat: location.lat,
-      lon: location.lon,
-      units: units,
-    });
-    return json({ currentConditions: data });
-  } catch (error) {
-    console.error("Error fetching weather data:", error);
-    return json({ error: "Failed to fetch weather data" }, { status: 500 });
-  }
+  const data = await fetchWeatherData({
+    lat: location.lat,
+    lon: location.lon,
+    units: units,
+  })
+  return json({ currentConditions: data })
 }
 
-export default function Index() {
-  const data = useLoaderData<typeof loader>();
-  
-  // Type guard to check if data has error property
-  const hasError = (obj: any): obj is { error: string } => {
-    return 'error' in obj;
-  };
-  
-  if (hasError(data)) {
-    return (
-      <div style={{ color: 'red', padding: '1rem' }}>
-        <h1>Error</h1>
-        <p>{data.error}</p>
-      </div>
-    );
-  }
-  
-  const { currentConditions } = data;
-  const weather = currentConditions.weather[0];
-  
+export default function CurrentConditions() {
+  const { currentConditions } = useLoaderData<typeof loader>()
+  const weather = currentConditions.weather[0]
   return (
     <>
       <main
@@ -69,7 +47,7 @@ export default function Index() {
           lineHeight: '1.8',
         }}
       >
-        <h1>Remix Weather</h1>
+        <h1>Remix Weather- CI/CD Test 1</h1>
         <p>
           For Algonquin College, Woodroffe Campus <br />
           <span style={{ color: 'hsl(220, 23%, 60%)' }}>
