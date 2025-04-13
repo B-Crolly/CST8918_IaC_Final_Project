@@ -3,17 +3,12 @@ variable "labelPrefix" {
   type        = string
   default     = "cst8918-final-project-group-1"
   description = "cst8918-final-project-group-1"
-
 }
 
 variable "region" {
-  default = "canadacentral"
-}
-
-variable "admin_username" {
   type        = string
-  default     = "azureadmin"
-  description = "The username for the local user account on the VM."
+  default     = "canadacentral"
+  description = "Azure region where resources will be deployed"
 }
 
 # Weather API key - populated by GitHub Action

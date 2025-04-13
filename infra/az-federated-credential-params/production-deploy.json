@@ -1,7 +1,7 @@
 {
     "name": "production-deploy",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "",
-    "description": "",
+    "subject": "repo:B-Crolly/CST8918_IaC_Final_Project:environment:production",
+    "description": "CST8918 Final Project - GitHub Actions",
     "audiences": ["api://AzureADTokenExchange"]
   }

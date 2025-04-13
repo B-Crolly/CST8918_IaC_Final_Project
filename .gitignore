@@ -45,3 +45,4 @@ node_modules
 # Allowing .terraform.lock.hcl files to be committed
 software_requirements.txt
 infra/tf-app/secret.tfvars
+3-azure-credentials.md
