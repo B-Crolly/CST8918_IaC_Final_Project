@@ -1,4 +1,4 @@
-import { redis } from '../data-access/redis-connection'
+import { redis, redisConnectionError } from '../data-access/redis-connection'
 
 const API_KEY = process.env.WEATHER_API_KEY
 const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather'
@@ -9,6 +9,7 @@ interface FetchWeatherDataParams {
   lon: number
   units: 'standard' | 'metric' | 'imperial'
 }
+
 export async function fetchWeatherData({
   lat,
   lon,
@@ -16,13 +17,39 @@ export async function fetchWeatherData({
 }: FetchWeatherDataParams) {
   const queryString = `lat=${lat}&lon=${lon}&units=${units}`
 
-  const cacheEntry = await redis.get(queryString)
-  if (cacheEntry) return JSON.parse(cacheEntry)
+  // Check if Redis connection is working
+  if (redisConnectionError) {
+    throw new Error(`Redis connection error: ${redisConnectionError.message}`)
+  }
 
-  const response = await fetch(`${BASE_URL}?${queryString}&appid=${API_KEY}`)
-  const data = await response.text() // avoid an unnecessary extra JSON.stringify
-  await redis.set(queryString, data, { PX: TEN_MINUTES }) // The PX option sets the expiry time
-  return JSON.parse(data)
+  try {
+    // Try to get from cache if Redis is connected
+    const cacheEntry = await redis.get(queryString)
+    if (cacheEntry) return JSON.parse(cacheEntry)
+
+    // Fetch from API if not in cache
+    const response = await fetch(`${BASE_URL}?${queryString}&appid=${API_KEY}`)
+    const data = await response.text() // avoid an unnecessary extra JSON.stringify
+    
+    // Try to cache it, but don't fail if Redis is down
+    try {
+      await redis.set(queryString, data, { PX: TEN_MINUTES }) 
+    } catch (cacheError) {
+      console.error('[WEATHER] Failed to cache weather data:', cacheError)
+    }
+    
+    return JSON.parse(data)
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Redis connection error')) {
+      throw error; // Re-throw Redis connection errors
+    }
+    
+    // For other errors, try direct API call as fallback
+    console.error('[WEATHER] Error fetching weather data, trying direct API call:', error)
+    const response = await fetch(`${BASE_URL}?${queryString}&appid=${API_KEY}`)
+    const data = await response.json()
+    return data
+  }
 }
 
 export async function getGeoCoordsForPostalCode(

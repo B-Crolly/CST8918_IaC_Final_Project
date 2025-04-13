@@ -27,16 +27,64 @@ export async function loader() {
   // TODO: accept query params for location and units
   // TODO: look up location by postal code
 
-  const data = await fetchWeatherData({
-    lat: location.lat,
-    lon: location.lon,
-    units: units,
-  })
-  return json({ currentConditions: data })
+  try {
+    const data = await fetchWeatherData({
+      lat: location.lat,
+      lon: location.lon,
+      units: units,
+    })
+    return json({ currentConditions: data, error: null })
+  } catch (error) {
+    console.error('Failed to fetch weather data:', error)
+    let errorMessage = 'An unexpected error occurred'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Redis connection error')) {
+        errorMessage = 'Redis server is unavailable. Weather data cannot be cached.'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
+    return json({ 
+      currentConditions: null, 
+      error: errorMessage 
+    })
+  }
 }
 
 export default function CurrentConditions() {
-  const { currentConditions } = useLoaderData<typeof loader>()
+  const { currentConditions, error } = useLoaderData<typeof loader>()
+  
+  // If there's an error, display it
+  if (error) {
+    return (
+      <main style={{
+        padding: '1.5rem',
+        fontFamily: 'system-ui, sans-serif',
+        lineHeight: '1.8',
+      }}>
+        <h1>Remix Weather App</h1>
+        <div style={{
+          backgroundColor: '#FEE2E2',
+          color: '#B91C1C',
+          padding: '1rem',
+          borderRadius: '0.25rem',
+          marginTop: '1rem',
+          marginBottom: '1rem',
+          border: '1px solid #F87171'
+        }}>
+          <h2>Error</h2>
+          <p>{error}</p>
+        </div>
+        <p>
+          Please try again later or contact support if this issue persists.
+        </p>
+      </main>
+    )
+  }
+  
+  // Otherwise, display weather data
   const weather = currentConditions.weather[0]
   return (
     <>
