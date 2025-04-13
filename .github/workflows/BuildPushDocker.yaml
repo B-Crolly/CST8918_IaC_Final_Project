@@ -14,7 +14,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: ./app/tf-app 
+    working-directory: ./app
     
 jobs:
   build-and-push:
@@ -31,7 +31,7 @@ jobs:
       - name: Azure Login with OIDC
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID_RW }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 

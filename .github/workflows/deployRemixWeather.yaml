@@ -19,20 +19,24 @@ permissions:
 
 #These environment variables are used by the terraform azure provider to setup OIDD authenticate. 
 env:
-  ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+  ARM_CLIENT_ID: "${{ github.event_name == 'push' && secrets.AZURE_CLIENT_ID_RW || secrets.AZURE_CLIENT_ID_R }}"
   ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
   ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
   ARM_ACCESS_KEY: "${{ secrets.ARM_ACCESS_KEY }}"
+  # AKS cluster information
+  AZURE_RESOURCE_GROUP: "cst8918-final-project-group-1-RG"
+  AZURE_AKS_CLUSTER: "${{ github.event_name == 'push' && 'cst8918-final-project-group-1-aks-prod' || 'cst8918-final-project-group-1-aks-test' }}"
+  APP_DIR: "./app"
 
 defaults:
   run:
-    working-directory: ./app/tf-app  
+    working-directory: ./app
   
-
 jobs:
   deploy:
     name: Deploy to AKS
     runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' && 'production' || 'test' }}
 
     steps:
       - name: Checkout code
@@ -44,7 +48,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ github.event_name == 'push' && secrets.AZURE_CLIENT_ID_RW || secrets.AZURE_CLIENT_ID_R }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Set AKS context
         uses: azure/aks-set-context@v3
