@@ -1,24 +1,41 @@
-import { createClient, RedisClientType } from 'redis'
+import { createClient } from 'redis'
+import type { RedisClientType, RedisClientOptions } from 'redis'
 
-const url = process.env.REDIS_URL || 'redis://localhost:6379'
-console.log(`[REDIS] Attempting to connect to Redis at: ${url.replace(/:[^:@]*@/, ':***@')}`)
+// Extract host and password from the URL
+const redisUrl = new URL(process.env.REDIS_URL || 'redis://localhost:6379')
+const host = redisUrl.hostname
+const password = redisUrl.password
+console.log(`[REDIS] Attempting to connect to Redis at: ${host}`)
 
 // Error state that can be exposed to the application
 export let redisConnectionError: Error | null = null;
 
 // Attempt to connect to Redis, expose error if it fails
-let redis: RedisClientType
-try {
-  const client = createClient({ 
-    url,
-    socket: {
-      // Reduce the reconnection attempts to fail faster
-      reconnectStrategy: false // Disable automatic reconnection
+let redis: RedisClientType<any>
+
+const clientOptions: RedisClientOptions = {
+  socket: {
+    host,
+    port: 6380,
+    tls: true,
+    rejectUnauthorized: false,
+    reconnectStrategy: (retries: number) => {
+      console.log(`[REDIS] Reconnection attempt ${retries}`)
+      if (retries > 20) {
+        console.log('[REDIS] Maximum reconnection attempts reached')
+        return new Error('Maximum reconnection attempts reached')
+      }
+      return Math.min(retries * 100, 3000) // Exponential backoff, max 3s
     }
-  })
+  },
+  password
+}
+
+try {
+  const client = createClient(clientOptions)
   
   client.on('error', (err) => {
-    console.error('[REDIS] Client connection error', err)
+    console.error('[REDIS] Client connection error:', err.message)
     redisConnectionError = err
   })
   
@@ -26,28 +43,32 @@ try {
     console.log('[REDIS] Connected successfully')
     redisConnectionError = null
   })
-  
-  // Attempt to connect with a short timeout
-  const connectPromise = client.connect()
-  const timeoutPromise = new Promise((_, reject) => {
-    // Reduce timeout to fail faster - only wait 1 second
-    setTimeout(() => reject(new Error('Redis connection timeout')), 1000)
+
+  client.on('reconnecting', () => {
+    console.log('[REDIS] Attempting to reconnect...')
+  })
+
+  client.on('ready', () => {
+    console.log('[REDIS] Client is ready')
+  })
+
+  client.on('end', () => {
+    console.log('[REDIS] Connection closed')
   })
   
-  redis = await Promise.race([connectPromise, timeoutPromise])
-    .then(() => client)
-    .catch((err) => {
-      console.error('[REDIS] Failed to connect:', err.message)
-      redisConnectionError = err
-      // Return the client anyway, but with error state set
-      return client
-    })
+  // Connect in the background
+  client.connect().catch((err) => {
+    console.error('[REDIS] Failed to connect:', err.message)
+    redisConnectionError = err
+  })
+
+  redis = client
 } catch (error) {
   console.error('[REDIS] Error during Redis initialization:', error)
   redisConnectionError = error instanceof Error ? error : new Error('Unknown Redis error')
   // Create a minimal client that will error correctly
-  const client = createClient({ url })
-  redis = client as unknown as RedisClientType
+  const client = createClient(clientOptions)
+  redis = client
 }
 
 export { redis }
