@@ -24,3 +24,13 @@ export async function fetchWeatherData({
   await redis.set(queryString, data, { PX: TEN_MINUTES }) // The PX option sets the expiry time
   return JSON.parse(data)
 }
+
+export async function getGeoCoordsForPostalCode(
+  postalCode: string,
+  countryCode: string,
+) {
+  const url = `http://api.openweathermap.org/geo/1.0/zip?zip=${postalCode},${countryCode}&appid=${API_KEY}`
+  const response = await fetch(url)
+  const data = response.json()
+  return data
+}

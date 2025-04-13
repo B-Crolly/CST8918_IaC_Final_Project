@@ -15,3 +15,18 @@ variable "admin_username" {
   default     = "azureadmin"
   description = "The username for the local user account on the VM."
 }
+
+# Weather API key - populated by GitHub Action
+variable "weather_api_key" {
+  type        = string
+  default     = ""
+  description = "API key for OpenWeather API"
+  sensitive   = true
+}
+
+# Container image tag for versioning
+variable "image_tag" {
+  type        = string
+  default     = "v0.1.0"
+  description = "Version tag for the container image"
+}

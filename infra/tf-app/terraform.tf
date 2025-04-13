@@ -7,5 +7,6 @@ terraform {
     container_name       = "tfstate"
     key                  = "prod.app.tfstate"
     use_oidc             = true
+    subscription_id      = "baa2e491-8289-482b-8458-84a427f52aa1"
   }
 } 

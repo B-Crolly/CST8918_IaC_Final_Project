@@ -1,3 +1,4 @@
+# Network outputs
 output "vnet_id" {
   description = "ID of the virtual network"
   value       = azurerm_virtual_network.vnet.id
@@ -31,16 +32,6 @@ output "admin_subnet_id" {
 output "nsg_id" {
   description = "ID of the network security group"
   value       = azurerm_network_security_group.webserver.id
-}
-
-output "public_ip_id" {
-  description = "ID of the public IP address"
-  value       = azurerm_public_ip.webserver.id
-}
-
-output "public_ip_address" {
-  description = "The public IP address"
-  value       = azurerm_public_ip.webserver.ip_address
 }
 
 output "network_interface_id" {
