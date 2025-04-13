@@ -1,38 +1,32 @@
 import { createClient } from 'redis'
-import type { RedisClientType, RedisClientOptions } from 'redis'
-
-// Extract host and password from the URL
-const redisUrl = new URL(process.env.REDIS_URL || 'redis://localhost:6379')
-const host = redisUrl.hostname
-const password = redisUrl.password
-console.log(`[REDIS] Attempting to connect to Redis at: ${host}`)
+import type { RedisClientType } from 'redis'
 
 // Error state that can be exposed to the application
 export let redisConnectionError: Error | null = null;
 
-// Attempt to connect to Redis, expose error if it fails
-let redis: RedisClientType<any>
+// Get the Redis URL from environment variables
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
 
-const clientOptions: RedisClientOptions = {
-  socket: {
-    host,
-    port: 6380,
-    tls: true,
-    rejectUnauthorized: false,
-    reconnectStrategy: (retries: number) => {
-      console.log(`[REDIS] Reconnection attempt ${retries}`)
-      if (retries > 20) {
-        console.log('[REDIS] Maximum reconnection attempts reached')
-        return new Error('Maximum reconnection attempts reached')
-      }
-      return Math.min(retries * 100, 3000) // Exponential backoff, max 3s
-    }
-  },
-  password
-}
+console.log('[REDIS] Attempting to connect to Redis using connection string')
+
+let redis: RedisClientType
 
 try {
-  const client = createClient(clientOptions)
+  const client = createClient({
+    url: redisUrl,
+    socket: {
+      tls: true,
+      rejectUnauthorized: false, // Skip certificate verification for Azure Redis
+      reconnectStrategy: (retries: number) => {
+        console.log(`[REDIS] Reconnection attempt ${retries}`)
+        if (retries > 20) {
+          console.log('[REDIS] Maximum reconnection attempts reached')
+          return new Error('Maximum reconnection attempts reached')
+        }
+        return Math.min(retries * 100, 3000) // Exponential backoff, max 3s
+      }
+    }
+  })
   
   client.on('error', (err) => {
     console.error('[REDIS] Client connection error:', err.message)
@@ -67,7 +61,13 @@ try {
   console.error('[REDIS] Error during Redis initialization:', error)
   redisConnectionError = error instanceof Error ? error : new Error('Unknown Redis error')
   // Create a minimal client that will error correctly
-  const client = createClient(clientOptions)
+  const client = createClient({
+    url: redisUrl,
+    socket: {
+      tls: true,
+      rejectUnauthorized: false
+    }
+  })
   redis = client
 }
 

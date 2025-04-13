@@ -53,7 +53,7 @@ resource "kubernetes_secret" "weather_app_secret_test" {
 
   data = {
     WEATHER_API_KEY = var.weather_api_key
-    REDIS_URL       = "rediss://:${var.test_redis_key}@${var.test_redis_host}:${var.test_redis_port}"
+    REDIS_URL       = "redis://:${var.test_redis_key}@${var.test_redis_host}:${var.test_redis_port}?tls=true"
   }
 }
 
@@ -68,7 +68,7 @@ resource "kubernetes_secret" "weather_app_secret_prod" {
 
   data = {
     WEATHER_API_KEY = var.weather_api_key
-    REDIS_URL       = "rediss://:${var.prod_redis_key}@${var.prod_redis_host}:${var.prod_redis_port}"
+    REDIS_URL       = "redis://:${var.prod_redis_key}@${var.prod_redis_host}:${var.prod_redis_port}?tls=true"
   }
 }
 
