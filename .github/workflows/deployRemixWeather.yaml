@@ -77,6 +77,27 @@ jobs:
         run: |
           mkdir -p k8s
           
+      - name: Get Redis Connection Info and Create Secret
+        run: |
+          # Get Redis information based on environment
+          if [ "${{ env.ENVIRONMENT }}" == "production" ]; then
+            REDIS_HOST=$(az redis show --name weather-cst8918-final-project-group-1-prod --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "hostName" -o tsv)
+            REDIS_KEY=$(az redis list-keys --name weather-cst8918-final-project-group-1-prod --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "primaryKey" -o tsv)
+          else
+            REDIS_HOST=$(az redis show --name weather-cst8918-final-project-group-1-test --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "hostName" -o tsv)
+            REDIS_KEY=$(az redis list-keys --name weather-cst8918-final-project-group-1-test --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "primaryKey" -o tsv)
+          fi
+          
+          REDIS_CONNECTION="redis://:${REDIS_KEY}@${REDIS_HOST}:6380?tls=true"
+          
+          # Create or update Kubernetes secret
+          kubectl create secret generic weather-app-secrets-${{ env.ENVIRONMENT }} \
+            --from-literal=redis-connection-string="${REDIS_CONNECTION}" \
+            --from-literal=weather-api-key="${{ secrets.WEATHER_API_KEY }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+            
+          echo "Redis credentials stored in Kubernetes secret"
+
       - name: Generate K8s deployment file
         run: |
           cat > k8s/${{ env.ENVIRONMENT }}-deployment.yaml << EOF
@@ -106,9 +127,20 @@ jobs:
                   - containerPort: 3000
                   env:
                   - name: WEATHER_API_KEY
-                    value: "${{ secrets.WEATHER_API_KEY }}"
+                    valueFrom:
+                      secretKeyRef:
+                        name: weather-app-secrets-${{ env.ENVIRONMENT }}
+                        key: weather-api-key
                   - name: REDIS_CONNECTION_STRING
-                    value: "${{ secrets.REDIS_CONNECTION_STRING }}"
+                    valueFrom:
+                      secretKeyRef:
+                        name: weather-app-secrets-${{ env.ENVIRONMENT }}
+                        key: redis-connection-string
+                  - name: REDIS_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: weather-app-secrets-${{ env.ENVIRONMENT }}
+                        key: redis-connection-string
           ---
           apiVersion: v1
           kind: Service
