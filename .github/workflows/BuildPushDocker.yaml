@@ -12,6 +12,17 @@ on:
       - 'Dockerfile'
       - 'remix.config.js'
       - 'tsconfig.json'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '*.tsx'
+      - '*.ts'
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'remix.config.js'
+      - 'tsconfig.json'
+  workflow_call: # Allow this workflow to be called by other workflows
 
 #Special permissions required for OIDC authentication
 permissions:

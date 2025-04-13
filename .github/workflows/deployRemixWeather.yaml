@@ -1,10 +1,28 @@
 name: Deploy Remix Weather App to AKS
 
 on:
-  workflow_run:
-    workflows: ["Build & Push Remix Weather App Docker to ACR"]
-    types:
-      - completed
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '*.tsx'
+      - '*.ts'
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'remix.config.js'
+      - 'tsconfig.json'
+      - 'k8s/**'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '*.tsx'
+      - '*.ts'
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'remix.config.js'
+      - 'tsconfig.json'
+      - 'k8s/**'
 
 permissions:
   id-token: write
@@ -19,36 +37,28 @@ env:
   ARM_ACCESS_KEY: "${{ secrets.ARM_ACCESS_KEY }}"
   # AKS cluster information
   AZURE_RESOURCE_GROUP: "cst8918-final-project-group-1-RG"
-  AZURE_AKS_CLUSTER: "${{ github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.head_branch, 'main') && 'cst8918-final-project-group-1-aks-prod' || 'cst8918-final-project-group-1-aks-test' }}"
-  ENVIRONMENT: "${{ github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.head_branch, 'main') && 'production' || 'test' }}"
+  AZURE_AKS_CLUSTER: "${{ github.event_name == 'push' && 'cst8918-final-project-group-1-aks-prod' || 'cst8918-final-project-group-1-aks-test' }}"
+  ENVIRONMENT: "${{ github.event_name == 'push' && 'production' || 'test' }}"
 
 defaults:
   run:
     working-directory: ./
   
 jobs:
+  # Call the build workflow first
+  build:
+    uses: ./.github/workflows/BuildPushDocker.yaml
+
+  # Then deploy after build completes
   deploy:
     name: Deploy to AKS
-    # Only run if the build workflow completed successfully
-    if: github.event.workflow_run.conclusion == 'success'
+    needs: [build] # Wait for build to complete before deploying
     runs-on: ubuntu-latest
-    environment: ${{ contains(github.event.workflow_run.head_branch, 'main') && 'production' || 'test' }}
+    environment: ${{ github.event_name == 'push' && 'production' || 'test' }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      # Get PR number for commenting
-      - name: Get PR Number
-        id: get-pr-number
-        if: ${{ !contains(github.event.workflow_run.head_branch, 'main') }}
-        run: |
-          PR_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.event.workflow_run.head_sha }}/pulls")
-          PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number')
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
 
       - name: Azure Login
         uses: azure/login@v1
@@ -78,7 +88,7 @@ jobs:
               app: weather-app
               environment: ${{ env.ENVIRONMENT }}
           spec:
-            replicas: ${{ contains(github.event.workflow_run.head_branch, 'main') && '3' || '1' }}
+            replicas: ${{ github.event_name == 'push' && '3' || '1' }}
             selector:
               matchLabels:
                 app: weather-app
@@ -91,7 +101,7 @@ jobs:
               spec:
                 containers:
                 - name: weather-app
-                  image: ${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.event.workflow_run.head_sha }}
+                  image: ${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.sha }}
                   ports:
                   - containerPort: 3000
                   env:
@@ -121,16 +131,15 @@ jobs:
           
       # Comment on PR
       - name: Comment on PR
-        if: ${{ !contains(github.event.workflow_run.head_branch, 'main') && steps.get-pr-number.outputs.PR_NUMBER != '' }}
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = '${{ steps.get-pr-number.outputs.PR_NUMBER }}';
             github.rest.issues.createComment({
-                issue_number: parseInt(prNumber),
+                issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `✅ App deployed to ${{ env.ENVIRONMENT }} environment: \`${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.event.workflow_run.head_sha }}\``
+                body: `✅ App deployed to ${{ env.ENVIRONMENT }} environment: \`${{ secrets.ACR_LOGIN_SERVER }}/weather-app:${{ github.sha }}\``
             })
 
