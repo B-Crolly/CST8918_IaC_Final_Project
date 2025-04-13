@@ -18,7 +18,7 @@ resource "azurerm_redis_cache" "redis_test" {
   capacity                      = var.redis_cache_capacity_test
   family                        = var.redis_cache_family
   sku_name                      = var.redis_cache_sku
-  non_ssl_port_enabled          = false
+  non_ssl_port_enabled          = true
   minimum_tls_version           = "1.2"
   public_network_access_enabled = var.redis_public_network_access_enabled
 
@@ -35,7 +35,7 @@ resource "azurerm_redis_cache" "redis_prod" {
   capacity                      = var.redis_cache_capacity_prod
   family                        = var.redis_cache_family
   sku_name                      = var.redis_cache_sku
-  non_ssl_port_enabled          = false
+  non_ssl_port_enabled          = true
   minimum_tls_version           = "1.2"
   public_network_access_enabled = var.redis_public_network_access_enabled
 
