@@ -17,11 +17,12 @@ permissions:
   contents: read
   pull-requests: write
 
+#These environment variables are used by the terraform azure provider to setup OIDD authenticate. 
 env:
-  TF_VERSION: '1.5.0'
-  AZURE_RESOURCE_GROUP: 'your-aks-resource-group'
-  AZURE_AKS_CLUSTER: 'your-aks-cluster-name'
-  APP_DIR: './app'
+  ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+  ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+  ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+  ARM_ACCESS_KEY: "${{ secrets.ARM_ACCESS_KEY }}"
 
 defaults:
   run:
@@ -39,8 +40,6 @@ jobs:
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
 
       - name: Azure Login
         uses: azure/login@v1
