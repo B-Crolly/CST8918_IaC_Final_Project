@@ -1,9 +1,6 @@
 CST8918 - DevOps: Infrastructure as Code \
 Prof: Robert McKenney
 
-# NOTE: This is for posterity, so requirements are easy to access. will need to populate later
-# Final Project: Terraform, Azure AKS, and GitHub Actions
-
 ## Overview
 
 This capstone project applies the many Infrastructure as Code (IaC) topics that you have learned this term. You will revisit the Remix Weather Application from week 3 and use Terraform to creat the required Azure resources. Your project will deploy Azure Kubernetes Service (AKS) clusters and a managed Redis DB to support the Remix Weather Application. You will use GitHub Actions to automate the Terraform workflows.
@@ -86,16 +83,16 @@ The application code and the infrastructure code should be in the same repositor
   - only when the application code changes
   - to the test environment on "pull_request" to the main branch
   - to the production environment on "push" to the main branch (merge of pull request)
+  
+### Screenshots of Workflows
 
-## Submission
+![final workflow from the PR](image.png) 
+![final workflow on main 1](image-1.png)
 
-Only one submission per team is required. Include the following in your submission:
+![final workflow on main 2](image-2.png)
 
-- Submit the URL to your GitHub repository in Brightspace
-- Do not forget to add your professor (rlmckenney) as a collaborator to the repository!
-- Include a README.md file that describes the project, names the team members with links to their GitHub profiles, and any special instructions for running the project
-  - Include a screenshot of the completed GitHub Actions workflows in your repository
-
-## Clean Up
-
-Once you have tested and submitted your project, you should delete the Azure resources to avoid incurring overuse charges and a potential 10% grade penalty.
+### Team Members and Github Links
+Bourne Crolly:  https://github.com/B-Crolly
+Yiting (Tina) Yao: https://github.com/yitingyao
+Catherine Daigle: https://github.com/Kepai39
+Rae Ehret: https://github.com/ehre0004
