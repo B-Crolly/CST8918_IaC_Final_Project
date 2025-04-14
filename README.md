@@ -1,101 +1,128 @@
-CST8918 - DevOps: Infrastructure as Code \
-Prof: Robert McKenney
+# CST8918 IaC Final Project - Weather Application
 
-# NOTE: This is for posterity, so requirements are easy to access. will need to populate later
-# Final Project: Terraform, Azure AKS, and GitHub Actions
+## Team Members
+- [Bourne Crolly](https://github.com/B-Crolly)
+- [Yiting (Tina) Yao](https://github.com/yitingyao)
+- [Catherine Daigle](https://github.com/Kepai39)
+- [Rae Ehret](https://github.com/ehre0004)
 
-## Overview
+## Project Overview
+This project implements a weather application using Infrastructure as Code (IaC) principles. The application is deployed on Azure Kubernetes Service (AKS) with both test and production environments.
 
-This capstone project applies the many Infrastructure as Code (IaC) topics that you have learned this term. You will revisit the Remix Weather Application from week 3 and use Terraform to creat the required Azure resources. Your project will deploy Azure Kubernetes Service (AKS) clusters and a managed Redis DB to support the Remix Weather Application. You will use GitHub Actions to automate the Terraform workflows.
+### Infrastructure Components
+- Azure Kubernetes Service (AKS) clusters
+  - Test environment: 1 node
+  - Production environment: 1-3 nodes (autoscaling)
+- Azure Cache for Redis
+- Azure Container Registry (ACR)
+- Virtual Network with multiple subnets
+- Azure Blob Storage for Terraform state
 
-The Azure configuration will be stored in a Terraform backend in Azure Blob Storage. The Terraform code will be organized into modules to manage the resources. The project will simulate a real-world scenario with multiple team members collaborating on the project, and multiple environments (dev, test, prod) to manage.
+### Application Features
+- Real-time weather data retrieval
+- Caching using Redis
+- Containerized deployment
+- CI/CD pipeline with GitHub Actions
 
-### Automated tests
+## Instructions
 
-For this project you can ignore application level tests. The focus is on the infrastructure tests. You should include the following tests in your GitHub Actions workflows:
+### Prerequisites
+- Azure CLI
+- kubectl
+- Terraform
+- Node.js and npm
+- Docker and Docker Compose
 
-- All static tests should run on any push to any branch.
-- Terraform plan and tflint should run on any pull request to the main branch.
+### Local Development Setup
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create and configure .env file:
+   ```bash
+   # Create .env file
+   touch .env
+   
+   # Add the following content to .env:
+   WEATHER_API_KEY=your_openweather_api_key_here
+   REDIS_URL=redis://localhost:6379
+   PORT=3000
+   ```
+4. Start Redis container:
+   ```bash
+   # Pull the Redis image
+   docker pull redis
+   
+   # Run Redis container
+   docker run -d --name redis -p 6379:6379 redis
+   
+   # Verify Redis is running
+   docker ps
+   
+   # Test Redis connection
+   docker exec -it redis redis-cli ping
+   # Should return "PONG"
+   ```
+5. Run the application locally:
+   ```bash
+   npm run dev
+   ```
 
-### Deployment
+### Infrastructure Deployment
+1. Navigate to the infrastructure directory:
+   ```bash
+   cd infra/tf-app
+   ```
+2. Initialize Terraform:
+   ```bash
+   terraform init
+   ```
+3. Apply the configuration:
+   ```bash
+   terraform apply
+   ```
 
-To assist with PR reviews and approval, if there is an application code change, the Remix Weather Application should be built and deployed to the test environment on any pull request to the main branch.
+### Accessing Test Environment
+Due to limited public IP availability for student projects, the test environment requires port forwarding to access:
+```bash
+# Get the test pod name
+kubectl get pods
+# Forward local port 8080 to pod port 3000
+kubectl port-forward <test-pod-name> 8080:3000
+```
+Then access the application at http://localhost:8080
 
-Any infrastructure changes should be deployed when the pull request is approved and merged to the main branch. If there is an application code change, the Remix Weather Application should be deployed to the production environment once the pull request is approved and merged to the main branch.
+## Deployment Workflow
+The application is automatically deployed through GitHub Actions workflows:
 
-This workflow assumes that the application code and infrastructure code are in the same repository, and that infrastructure changes and application changes are managed in _separate_ pull requests.
+1. **On Pull Request to Main**:
+   - Runs static code analysis (fmt, validate, tfsec)
+   - Runs tflint and terraform plan
+   - Builds and pushes Docker image to ACR
+   - Deploys to test environment
 
-## Requirements
+2. **On Merge to Main**:
+   - Runs terraform apply for infrastructure changes
+   - Deploys to production environment
+   - Production Redis is automatically provisioned through Terraform
+   - Application connects to production Redis using connection string from Kubernetes secrets
 
-### Collaboration
+## Screenshots
 
-- One team member: create a GitHub repository for the project
-- Add your professor (rlmckenney) as a collaborator to the repository
-- Add your team members as collaborators to the repository
-- Configure branch protection rules for the main branch
-  - Require pull request reviews before merging (no direct push to main branch)
-  - Require status checks to pass before merging
-  - Require branches to be up to date before merging
-  - Require at least one approving review before merging (no self-approval)
-- Include a README.md file the describes the project, names the team members with links to their GitHub profiles and any special instructions for running the project.
-- Each team member must contribute to the project by creating pull requests to the main branch. Remember to create a new branch for each feature or bug fix and keep the unit of work small.
+Infrastructure deployed to azure:
+![alt text](image.png)
 
-### Define Resources
+succesfull workflows applied during Pull request (deploying only to test)
+![alt text](image-1.png)
 
-The application code and the infrastructure code should be in the same repository. The infrastructure code should be organized into Terraform modules to manage the resources. The Terraform code should be organized into the following modules:
+Workflows completing on main (deploying to prod)
+![alt text](image-2.png)
+![alt text](image-3.png)
 
-- Create a Terraform module to configure Azure Blob Storage as the Terraform backend
-- Create a Terraform module for the base network infrastructure
-  - resource group named `cst8918-final-project-group-<your group number from Brightspace>`
-  - virtual network with IP address space 10.0.0.0/14
-  - 4 subnets, where the second octet of the IP address space is used to represent the environment
-    - `prod` with IP address space 10.0.0.0/16
-    - `test` with IP address space 10.1.0.0/16
-    - `dev` with IP address space 10.2.0.0/16
-    - `admin` with IP address space 10.3.0.0/16
-- Create a Terraform module for the AKS clusters
-  - Create an AKS cluster in the `test` environment
-    - 1 node
-    - Standard B2s VM size
-    - Kubernetes version 1.32
-  - Create an AKS cluster in the `prod` environments
-    - min 1 node
-    - max 3 nodes
-    - Standard B2s VM size
-    - Kubernetes version 1.32
-- Create a Terraform module to define the resources for the Remix Weather Application
-  - Use the Remix Weather Application from week 3
-  - Create an Azure Container Registry (ACR) to store the Docker image
-  - Create an Azure Kubernetes Service (AKS) cluster to host the application in the test environment
-  - Create an Azure Kubernetes Service (AKS) cluster to host the application in the production environment
-  - Create a managed Redis DB (Azure Cache for Redis) to cache the weather API data in the test environment
-  - Create a managed Redis DB (Azure Cache for Redis) to cache the weather API data in the production environment
-  - Create a Kubernetes deployment and service for the Remix Weather Application
+app running in test (using kubectl port forwarding)
+![alt text](image-5.png)
+![alt text](image-4.png)
 
-### Automate Workflows
-
-- Create Azure federated identities for the GitHub Actions workflows (see lab from week 12)
-- Create a GitHub Actions workflow to run all Terraform static code analysis tasks (fmt, validate, tfsec) on "push" to any branch
-- Create a GitHub Actions workflow to run "tflint" and "terraform plan" on "pull_request" to the main branch
-- Create a GitHub Actions workflow to run "terraform apply" on "push" to the main branch
-- Create a GitHub Actions workflow to build and push the Docker image for the Weather App to the ACR
-  - only when the application code changes
-  - on "pull_request" to the main branch
-  - tag the Docker image with the commit SHA
-- Create a GitHub Actions workflow to deploy the Remix Weather Application to the AKS cluster
-  - only when the application code changes
-  - to the test environment on "pull_request" to the main branch
-  - to the production environment on "push" to the main branch (merge of pull request)
-
-## Submission
-
-Only one submission per team is required. Include the following in your submission:
-
-- Submit the URL to your GitHub repository in Brightspace
-- Do not forget to add your professor (rlmckenney) as a collaborator to the repository!
-- Include a README.md file that describes the project, names the team members with links to their GitHub profiles, and any special instructions for running the project
-  - Include a screenshot of the completed GitHub Actions workflows in your repository
-
-## Clean Up
-
-Once you have tested and submitted your project, you should delete the Azure resources to avoid incurring overuse charges and a potential 10% grade penalty.
+app running in prod
+![alt text](image-6.png)
